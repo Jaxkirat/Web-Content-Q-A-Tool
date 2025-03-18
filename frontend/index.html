@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AskWeb AI Chatbot</title>
+  <link rel="icon" href="favicon_64x64.png" type="image/png" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  <style>
+    body {
+      background: linear-gradient(to right, #e0eafc, #cfdef3);
+      min-height: 100vh;
+    }
+    .card {
+      border-radius: 1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .spinner-border {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+    .answer-box {
+      white-space: pre-wrap;
+      background-color: #f8f9fa;
+      border: 1px solid #ccc;
+      padding: 1rem;
+      border-radius: 0.75rem;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container py-4">
+    <!-- Hero Section -->
+    <div class="text-center mb-4">
+      <h1 class="display-5 fw-bold"> AskWeb AI Chatbot </h1>
+      <p class="lead">Ask questions based on your favorite web content!</p>
+    </div>
+
+    <!-- URL Input Card -->
+    <div class="card p-4 mb-4">
+      <h5>Step 1: Enter URLs to Ingest</h5>
+      <input type="text" id="urls" class="form-control my-2" placeholder="e.g. https://example.com, https://another.com">
+      <button class="btn btn-primary mt-2" onclick="ingest()">
+        <i class="fas fa-download"></i> Ingest URLs
+      </button>
+      <div id="ingest-status" class="mt-2"></div>
+    </div>
+
+    <!-- Question Input Card -->
+    <div class="card p-4 mb-4">
+      <h5>Step 2: Ask a Question</h5>
+      <input type="text" id="question" class="form-control my-2" placeholder="e.g. What are the key points?">
+      <button class="btn btn-success mt-2" onclick="ask()">
+        <i class="fas fa-question-circle"></i> Ask Question
+      </button>
+      <div id="loading-spinner" class="mt-2 d-none">
+        <div class="spinner-border text-secondary" role="status"></div> Fetching Answer...
+      </div>
+    </div>
+
+    <!-- Answer Section -->
+    <div class="card p-4 mb-4 d-none" id="answer-card">
+      <h5>Answer:</h5>
+      <div id="answer" class="answer-box"></div>
+      <button class="btn btn-outline-secondary mt-2" onclick="copyAnswer()">
+        <i class="fas fa-copy"></i> Copy Answer
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    let backendURL = 'http://localhost:3000'; // Update with Render backend URL
+
+    async function ingest() {
+      const urls = document.getElementById('urls').value;
+      document.getElementById('ingest-status').innerHTML = '<div class="spinner-border text-primary" role="status"></div> Ingesting...';
+      try {
+        const res = await fetch(`${backendURL}/ingest`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({urls})
+        });
+        const data = await res.json();
+        document.getElementById('ingest-status').innerHTML = `<div class="alert alert-success mt-2">${data.message}</div>`;
+      } catch (err) {
+        document.getElementById('ingest-status').innerHTML = `<div class="alert alert-danger mt-2">Failed to ingest URLs.</div>`;
+      }
+    }
+
+    async function ask() {
+      const question = document.getElementById('question').value;
+      document.getElementById('loading-spinner').classList.remove('d-none');
+      document.getElementById('answer-card').classList.add('d-none');
+      try {
+        const res = await fetch(`${backendURL}/ask`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({question})
+        });
+        const data = await res.json();
+        document.getElementById('loading-spinner').classList.add('d-none');
+        document.getElementById('answer').innerText = data.answer;
+        document.getElementById('answer-card').classList.remove('d-none');
+        window.scrollTo({ top: document.getElementById('answer-card').offsetTop, behavior: 'smooth' });
+      } catch (err) {
+        document.getElementById('loading-spinner').classList.add('d-none');
+        alert('Error fetching answer.');
+      }
+    }
+
+    function copyAnswer() {
+      const text = document.getElementById('answer').innerText;
+      navigator.clipboard.writeText(text);
+      alert('Answer copied to clipboard!');
+    }
+  </script>
+
+</body>
+</html>
